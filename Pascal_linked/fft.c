@@ -27,7 +27,8 @@ print_vector(
   int i;
   printf("%s (dim=%d):", title, n);
   for(i=0; i<n; i++ ) printf(" %5.2f,%5.2f ", x[i].Re,x[i].Im);
-  putchar('\n');
+  printf("\n");
+  //putchar('\n');
   return;
 }
 
@@ -111,8 +112,8 @@ ifft( complex *v, int n, complex *tmp )
 }
 
 
-int
-main(void)
+void
+fft_pas(void)
 {
   complex v[N], v1[N], scratch[N];
   int k;
@@ -139,5 +140,5 @@ main(void)
   ifft( v1, N, scratch );
   print_vector("iFFT", v1, N);
 
-  exit(EXIT_SUCCESS);
+  //exit(EXIT_SUCCESS);
 }
