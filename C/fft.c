@@ -6,14 +6,14 @@
 #include <stdlib.h>
 
 
-#define q	3		/* for 2^3 points */
+#define q	8		/* for 2^3 points */
 #define N	(1<<q)		/* N-point FFT, iFFT */
 
 typedef float real;
 typedef struct{real Re; real Im;} complex;
 
 #ifndef PI
-# define PI	3.14159265358979323846264338327950288
+# define PI	M_PI
 #endif
 
 
@@ -109,35 +109,94 @@ ifft( complex *v, int n, complex *tmp )
   }
   return;
 }
+int octave_write_32(const char * fn,complex * d_ptr, int sz) {
+	 
+	FILE *subfileptr;
+	int i;
+	float mag[sz],*ptr;
+	ptr=&mag[0];
+	for(i=0;i<sz;i++) {
+		//mag[i]= sqrt(d_ptr[i].Re*d_ptr[i].Re+d_ptr[i].Im*d_ptr[i].Im);
+		mag[i]= (float)d_ptr[i].Re;
+	}
+	subfileptr = fopen(fn,"w");
+	printf("file name %s data ptr 0x%x size %d \n",fn, d_ptr,sz);
+	if (NULL == subfileptr) {
+		/*
+		fprintf(stderr, "Could not open red for writing\n");
+		perror("RED-WR:");
+		exit(EXIT_FAILURE);
+		*/
+		return(0);
+	}
+ 
+	if (sz != (int)fwrite(ptr,  sizeof(float), sz, subfileptr)) {
+		fprintf(stderr, "Write of red failed\n"); perror("RED:");
+		exit(EXIT_FAILURE);
+	}
+	
+ 	
+	fclose(subfileptr);
+	
+	return(1);
+}
 
 
 int
 main(void)
 {
   complex v[N], v1[N], scratch[N];
-  int k;
-
+  int k, freq1, freq2, num_periods, num_tsteps;
+  const char *octave_output_file;
+  float period1;
+  double tstep;
+  double w1;
+	freq1 = 400; 
+	freq2 = 2500; 
+	period1 = (float)1 / freq1; 
+	w1 = 2 * PI * freq1;
+	num_periods = 48;  
+	num_tsteps = N;
+	
+	tstep = ((num_periods * period1) / (double)num_tsteps); 
+	printf(" %10.12f %f %f \n",PI,w1,tstep);
   /* Fill v[] with a function of known FFT: */
   for(k=0; k<N; k++) {
-    v[k].Re = 0.125*cos(2*PI*k/(double)N);
-    v[k].Im = 0.125*sin(2*PI*k/(double)N);
-    v1[k].Re =  0.3*cos(2*PI*k/(double)N);
-    v1[k].Im = -0.3*sin(2*PI*k/(double)N);
+	  v[k].Im = 0.0;
+	  //v[k].Im = sin(w1*k*tstep);
+	  v[k].Re = sin(w1*k*tstep);
+	  
+	  //printf(" %f , %f",k*tstep,v[k].Re);
+	  //v[k].Re = sin(w1)*k/(double)N;
+    //v[k].Re = 0.75*cos(80*2*PI*k/(double)N)*(0.25*cos(20*2*PI*k/(double)N));
+    //v[k].Im = 0.75*sin(80*2*PI*k/(double)N)*(0.25*sin(20*2*PI*k/(double)N));
+    //v1[k].Re =  0.3*cos(2*PI*k/(double)N);
+    //v1[k].Im = -0.3*sin(2*PI*k/(double)N);
   }
-    
-  /* FFT, iFFT of v[]: */
+  //printf("\n");
   print_vector("Orig", v, N);
+  octave_output_file = "orig-out.32t";
+  octave_write_32(octave_output_file,v,N);    
+  /* FFT, iFFT of v[]: */
+  //print_vector("Orig", v, N);
   fft( v, N, scratch );
-  print_vector(" FFT", v, N);
+  //print_vector(" FFT", v, N);
+  octave_output_file = "fft-out.32t";
+  octave_write_32(octave_output_file,v,N);
   ifft( v, N, scratch );
-  print_vector("iFFT", v, N);
+  octave_output_file = "ifft-out.32t";
+  octave_write_32(octave_output_file,v,N);
+  //print_vector("iFFT", v, N);
 
   /* FFT, iFFT of v1[]: */
+  /*
   print_vector("Orig", v1, N);
   fft( v1, N, scratch );
   print_vector(" FFT", v1, N);
+  octave_output_file = "fft-out.32t";
+  octave_write_32(octave_output_file,v,N);
   ifft( v1, N, scratch );
   print_vector("iFFT", v1, N);
-
+  */
   exit(EXIT_SUCCESS);
 }
